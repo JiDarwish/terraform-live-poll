@@ -1,0 +1,19 @@
+# Terraform: never commit state. It records your infrastructure and holds secrets.
+*.tfstate
+*.tfstate.*
+.terraform/
+tfplan
+*.tfplan
+generated.tf
+crash.log
+terraform.tfvars
+# .terraform.lock.hcl IS committed: it pins provider versions for everyone.
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# OS
+.DS_Store

@@ -1,0 +1,6 @@
+tests/
+**/__pycache__
+.venv/
+.pytest_cache/
+requirements-dev.txt
+compose.yaml

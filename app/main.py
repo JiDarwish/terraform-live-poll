@@ -157,4 +157,6 @@ def results(settings: Settings = Depends(get_settings), table: TableClient = Dep
         "environment": settings.environment,
         "options": [{"option": o, "count": counts[o]} for o in settings.options],
         "total": sum(counts[o] for o in settings.options),
+        # Lets an open /results tab notice a new revision and reload its footer.
+        "revision": settings.revision,
     }

@@ -99,6 +99,7 @@ def test_vote_then_results_counts_up(client, settings_override):
     assert body["poll_id"] == s.poll_id
     assert body["question"] == s.question
     assert body["environment"] == "dev"
+    assert body["revision"] == "local"
     assert body["total"] == 1
     assert body["options"] == [
         {"option": o, "count": 1 if o == "Used it" else 0} for o in s.options

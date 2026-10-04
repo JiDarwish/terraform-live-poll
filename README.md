@@ -16,6 +16,7 @@ cd app && docker compose up
 
 This starts the app, [Azurite](https://learn.microsoft.com/azure/storage/common/storage-use-azurite) (Azure's local storage emulator) and a one-shot `table-init` step that creates the `votes` table. Then open `http://<your-laptop-LAN-IP>:8000/` on a phone on the same network. If the phone cannot connect, allow incoming connections on port 8000 in your laptop's firewall.
 
+- `http://<your-laptop-LAN-IP>:8000/results` is the projector page: the question, live bars, the total and a QR code to the vote page. The QR code uses whatever host the browser used, so open it via the LAN IP, not `localhost`, or phones cannot reach it.
 - `http://localhost:8000/api/results` shows the counts as JSON.
 - `POLL_QUESTION="Other?" docker compose up -d app` starts a new poll at zero. Older votes stay in the table.
 - Votes survive `docker compose down`. Use `docker compose down -v` to delete them.

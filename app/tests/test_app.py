@@ -220,7 +220,7 @@ def test_page_shows_thanks_after_vote(client):
     client.post("/api/vote", data={"option": "Used it"}, follow_redirects=False)
     html = client.get("/").text
     assert "Thanks, look at the screen" in html
-    assert 'href="/api/results"' in html
+    assert 'href="/results"' in html
     assert "<button" not in html
 
 

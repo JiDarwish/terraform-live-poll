@@ -161,3 +161,49 @@ def test_non_key_auth_mode_raises():
     main.get_table.cache_clear()
     with pytest.raises(ValueError, match="#3"):
         main.get_table(make_settings(auth_mode="identity"))
+
+
+# --- phone vote page ------------------------------------------------------
+
+def test_page_renders(client, settings_override):
+    s = settings_override["settings"]
+    r = client.get("/")
+    assert r.status_code == 200
+    html = r.text
+    assert s.question in html
+    assert html.count("<button") == len(s.options)
+    assert "DEV" in html
+    assert "#2f7d5b" in html
+    assert 'name="viewport"' in html
+    assert "<script" not in html
+
+
+def test_page_shows_thanks_after_vote(client):
+    client.post("/api/vote", data={"option": "Used it"}, follow_redirects=False)
+    html = client.get("/").text
+    assert "Thanks, look at the screen" in html
+    assert 'href="/api/results"' in html
+    assert "<button" not in html
+
+
+def test_page_renders_prod_badge(client, settings_override):
+    settings_override["settings"] = make_settings(environment="prod", color="#123456")
+    html = client.get("/").text
+    assert "PROD" in html
+    assert "badge-prod" in html
+    assert "#123456" in html
+
+
+def test_static_css_served(client):
+    r = client.get("/static/style.css")
+    assert r.status_code == 200
+    assert ".badge-dev" in r.text
+
+
+def test_page_does_not_touch_storage(client):
+    def broken_table():
+        raise RuntimeError("storage must not be touched by /")
+
+    main.app.dependency_overrides[main.get_table] = broken_table
+    assert client.get("/").status_code == 200
+    assert client.get("/healthz").status_code == 200

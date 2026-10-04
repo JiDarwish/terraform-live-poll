@@ -304,6 +304,13 @@ def test_results_page_escapes_question(client, settings_override):
     assert "<b>x</b>" not in html
 
 
+def test_static_results_js_served(client):
+    r = client.get("/static/results.js")
+    assert r.status_code == 200
+    assert "/api/results" in r.text
+    assert "2000" in r.text
+
+
 # --- optional: against a real Azurite -------------------------------------
 
 @pytest.mark.skipif(

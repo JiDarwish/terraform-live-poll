@@ -24,9 +24,8 @@ services:
   # In Azure, Terraform owns the table. Locally this one-shot step creates it,
   # because the app never does.
   table-init:
-    build: .
+    image: livepoll:dev  # built by `app`; no build here, so compose builds the image once
     platform: linux/amd64
-    image: livepoll:dev
     environment: *storage
     command:
       - python

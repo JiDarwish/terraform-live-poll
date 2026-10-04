@@ -47,7 +47,7 @@ def test_missing_question_fails_clearly(monkeypatch):
 
 
 def test_settings_defaults_from_env(monkeypatch):
-    for var in ("ENVIRONMENT", "POLL_COLOR", "TABLE_NAME", "AUTH_MODE"):
+    for var in ("ENVIRONMENT", "POLL_COLOR", "TABLE_NAME", "AUTH_MODE", "CONTAINER_APP_REVISION"):
         monkeypatch.delenv(var, raising=False)
     monkeypatch.setenv("POLL_QUESTION", "Q?")
     monkeypatch.setenv("POLL_OPTIONS", "a|b")
@@ -55,6 +55,30 @@ def test_settings_defaults_from_env(monkeypatch):
     s = main.get_settings()
     main.get_settings.cache_clear()
     assert (s.environment, s.color, s.table_name, s.auth_mode) == ("dev", "#2f7d5b", "votes", "key")
+    assert s.revision == "local"
+
+
+def settings_with_revision(monkeypatch, value):
+    monkeypatch.setenv("POLL_QUESTION", "Q?")
+    monkeypatch.setenv("POLL_OPTIONS", "a|b")
+    monkeypatch.setenv("CONTAINER_APP_REVISION", value)
+    main.get_settings.cache_clear()
+    s = main.get_settings()
+    main.get_settings.cache_clear()
+    return s
+
+
+def test_revision_from_env(monkeypatch):
+    assert settings_with_revision(monkeypatch, "ca-livepoll--abc123").revision == "ca-livepoll--abc123"
+
+
+def test_revision_empty_falls_back_to_local(monkeypatch):
+    assert settings_with_revision(monkeypatch, "").revision == "local"
+
+
+def test_auth_label():
+    assert make_settings(auth_mode="key").auth_label == "key"
+    assert make_settings(auth_mode="identity").auth_label == "managed identity"
 
 
 # --- vote store -----------------------------------------------------------

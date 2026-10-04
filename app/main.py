@@ -30,6 +30,11 @@ class Settings:
     auth_mode: str
     table_name: str
     connection_string: str
+    revision: str
+
+    @property
+    def auth_label(self) -> str:
+        return "managed identity" if self.auth_mode == "identity" else self.auth_mode
 
     @property
     def options(self) -> list[str]:
@@ -60,6 +65,8 @@ def get_settings() -> Settings:
         auth_mode=os.environ.get("AUTH_MODE", "key"),
         table_name=os.environ.get("TABLE_NAME", "votes"),
         connection_string=os.environ.get("STORAGE_CONNECTION_STRING", ""),
+        # Container Apps sets this per revision; `or` also turns an empty value into "local".
+        revision=os.environ.get("CONTAINER_APP_REVISION") or "local",
     )
 
 

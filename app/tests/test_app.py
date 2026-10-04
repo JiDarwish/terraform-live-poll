@@ -247,6 +247,63 @@ def test_page_does_not_touch_storage(client):
     assert client.get("/healthz").status_code == 200
 
 
+# --- projector results page ---------------------------------------------
+
+def test_results_page_renders(client, settings_override):
+    s = settings_override["settings"]
+    r = client.get("/results")
+    assert r.status_code == 200
+    html = r.text
+    assert s.question.replace("'", "&#39;") in html
+    for option in s.options:
+        assert option.replace("'", "&#39;") in html
+    assert "<svg" in html
+    assert "/static/results.js" in html
+    assert "DEV" in html
+    assert "dev · key · local" in html
+    assert f'data-poll-id="{s.poll_id}"' in html
+    assert 'data-revision="local"' in html
+
+
+def test_results_qr_uses_request_host(client, monkeypatch):
+    seen = []
+    monkeypatch.setattr(main, "qr_svg", lambda url: seen.append(url) or "<svg></svg>")
+    html = client.get("/results", headers={"host": "poll.example.com"}).text
+    assert seen == ["http://poll.example.com/"]
+    assert "http://poll.example.com/" in html
+
+
+def test_qr_svg_is_inline_svg():
+    svg = main.qr_svg("http://x/")
+    assert svg.startswith("<svg")
+    assert "<?xml" not in svg
+    assert "width=" not in svg
+
+
+def test_results_footer_identity_and_revision(client, settings_override):
+    settings_override["settings"] = make_settings(
+        auth_mode="identity", revision="ca-livepoll--abc123", environment="prod"
+    )
+    r = client.get("/results")
+    assert r.status_code == 200
+    assert "prod · managed identity · ca-livepoll--abc123" in r.text
+
+
+def test_results_page_does_not_touch_storage(client):
+    def broken_table():
+        raise RuntimeError("storage must not be touched by /results")
+
+    main.app.dependency_overrides[main.get_table] = broken_table
+    assert client.get("/results").status_code == 200
+
+
+def test_results_page_escapes_question(client, settings_override):
+    settings_override["settings"] = make_settings(question="<b>x</b>?")
+    html = client.get("/results").text
+    assert "&lt;b&gt;x&lt;/b&gt;?" in html
+    assert "<b>x</b>" not in html
+
+
 # --- optional: against a real Azurite -------------------------------------
 
 @pytest.mark.skipif(

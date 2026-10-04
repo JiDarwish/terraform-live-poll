@@ -9,6 +9,7 @@ from functools import lru_cache
 from pathlib import Path
 from uuid import uuid4
 
+import segno
 from azure.core.exceptions import AzureError
 from azure.data.tables import TableClient, TableServiceClient
 from fastapi import Depends, FastAPI, Form, Request
@@ -84,6 +85,12 @@ def store_unreachable() -> JSONResponse:
     return JSONResponse({"error": "vote store unreachable"}, status_code=503)
 
 
+def qr_svg(url: str) -> str:
+    # Inline SVG with no fixed size so CSS sizes it. border=4 is the standard quiet zone.
+    # No title/desc: the URL comes from the untrusted Host header and must not land in markup.
+    return segno.make_qr(url, error="m").svg_inline(scale=10, border=4, dark="#000", light="#fff", omitsize=True)
+
+
 app = FastAPI(title="Live Poll")
 app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
 templates = Jinja2Templates(directory=HERE / "templates")
@@ -109,6 +116,28 @@ def render_vote_page(request: Request, settings: Settings, store_down: bool = Fa
 def vote_page(request: Request, settings: Settings = Depends(get_settings)):
     # Never touches storage, so the page renders even when the vote store is down.
     return render_vote_page(request, settings)
+
+
+@app.get("/results", response_class=HTMLResponse)
+def results_page(request: Request, settings: Settings = Depends(get_settings)):
+    # Never touches storage either: results.js fetches the counts from /api/results.
+    # The QR points at the host the projector used, so the app never needs its own FQDN.
+    vote_url = str(request.url_for("vote_page"))
+    return templates.TemplateResponse(
+        request,
+        "results.html",
+        {
+            "question": settings.question,
+            "options": settings.options,
+            "color": settings.color,
+            "environment": settings.environment,
+            "auth_label": settings.auth_label,
+            "revision": settings.revision,
+            "poll_id": settings.poll_id,
+            "vote_url": vote_url,
+            "qr": qr_svg(vote_url),
+        },
+    )
 
 
 @app.get("/healthz")

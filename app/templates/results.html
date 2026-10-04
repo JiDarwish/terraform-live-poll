@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ question }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/results.js" defer></script>
+</head>
+<body class="results-page" style="--accent: {{ color }}">
+  <main data-poll-id="{{ poll_id }}" data-revision="{{ revision }}">
+    <span class="badge badge-{{ environment }}">{{ environment | upper }}</span>
+    <h1>{{ question }}</h1>
+    <p class="banner" role="alert" hidden>Can't reach the vote store</p>
+    <div class="results-grid">
+      <section>
+        <ul class="bars">
+          {% for option in options %}
+          <li data-option="{{ option }}">
+            <span class="label">{{ option }}</span>
+            <span class="track"><span class="bar" style="width: 0"></span></span>
+            <span class="count">–</span>
+          </li>
+          {% endfor %}
+        </ul>
+        <p class="total"><span class="total-count">–</span> votes</p>
+      </section>
+      <aside class="qr">
+        {{ qr | safe }}
+        <p class="vote-url">{{ vote_url }}</p>
+      </aside>
+    </div>
+    <footer>{{ environment }} · {{ auth_label }} · {{ revision }}</footer>
+  </main>
+</body>
+</html>

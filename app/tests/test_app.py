@@ -236,6 +236,7 @@ def test_static_css_served(client):
     r = client.get("/static/style.css")
     assert r.status_code == 200
     assert ".badge-dev" in r.text
+    assert ".results-page" in r.text
 
 
 def test_page_does_not_touch_storage(client):

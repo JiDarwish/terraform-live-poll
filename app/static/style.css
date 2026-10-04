@@ -70,3 +70,91 @@ button:active { filter: brightness(0.85); }
 }
 
 a { color: var(--accent); }
+
+/* --- projector results page: read from the back of the room -------------- */
+
+.results-page main {
+  max-width: none;
+  padding: 2rem 3vw;
+}
+
+.results-page h1 { font-size: clamp(2.5rem, 4vw, 5rem); }
+
+.results-page .badge { font-size: 1.25rem; }
+
+.results-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4vw;
+  align-items: start;
+}
+
+.bars {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Labels and counts sit beside the bar, never on it: POLL_COLOR can be any colour. */
+.bars li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.4rem 1.5rem;
+  align-items: center;
+  font-size: clamp(1.5rem, 2.5vw, 3rem);
+  font-weight: 600;
+}
+
+.bars .track {
+  grid-column: 1;
+  height: clamp(1.5rem, 3vh, 3rem);
+  background: #e4e4e4;
+  border-radius: 0.4rem;
+  overflow: hidden;
+}
+
+.bars .bar {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.4s;
+}
+
+.bars .count {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  min-width: 3ch;
+  text-align: right;
+  font-size: 1.3em;
+  font-variant-numeric: tabular-nums;
+}
+
+.results-page .total {
+  font-size: clamp(2rem, 3.5vw, 4rem);
+  font-weight: 700;
+  margin: 2rem 0 0;
+}
+
+.qr { text-align: center; }
+
+.qr svg {
+  display: block;
+  width: min(40vh, 30vw);
+  height: auto;
+}
+
+.vote-url {
+  font-size: 1.25rem;
+  color: #444;
+  word-break: break-all;
+  max-width: min(40vh, 30vw);
+}
+
+.results-page footer {
+  margin-top: 2rem;
+  font-size: 1.25rem;
+  color: #444;
+}

@@ -38,6 +38,8 @@ class Settings:
     @property
     def poll_id(self) -> str:
         # A new question or option list is a new poll; old votes keep their own poll_id.
+        # SPEC §4.3 fixes this formula (no separator), so the same question always maps to
+        # the same poll. Collisions such as "A?x"+"|y" vs "A?"+"x|y" are accepted.
         return hashlib.sha256((self.question + self.options_raw).encode()).hexdigest()[:8]
 
 

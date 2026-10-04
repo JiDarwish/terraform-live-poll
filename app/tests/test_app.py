@@ -137,6 +137,17 @@ def test_store_error_returns_503(client, table):
     assert r.json() == {"error": "vote store unreachable"}
 
 
+def test_store_error_on_form_post_renders_banner(client, table):
+    table.error = AzureError("boom")
+    r = client.post(
+        "/api/vote", data={"option": "Used it"}, headers={"Accept": "text/html"}, follow_redirects=False
+    )
+    assert r.status_code == 503
+    assert "text/html" in r.headers["content-type"]
+    assert "Can't reach the vote store" in r.text
+    assert "voted" not in r.headers.get("set-cookie", "")
+
+
 def test_key_mode_uses_connection_string(monkeypatch):
     calls = {}
 

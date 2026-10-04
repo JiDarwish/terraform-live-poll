@@ -10,6 +10,9 @@
   <main>
     <span class="badge badge-{{ environment }}">{{ environment | upper }}</span>
     <h1>{{ question }}</h1>
+    {% if store_down %}
+    <p class="banner" role="alert">Can't reach the vote store</p>
+    {% endif %}
     {% if voted %}
     <p class="thanks">Thanks, look at the screen</p>
     <p><a href="/api/results">See the results</a></p>

@@ -80,9 +80,7 @@ app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
 templates = Jinja2Templates(directory=HERE / "templates")
 
 
-@app.get("/", response_class=HTMLResponse)
-def vote_page(request: Request, settings: Settings = Depends(get_settings)):
-    # Never touches storage, so the page renders even when the vote store is down.
+def render_vote_page(request: Request, settings: Settings, store_down: bool = False, status_code: int = 200):
     return templates.TemplateResponse(
         request,
         "vote.html",
@@ -92,8 +90,16 @@ def vote_page(request: Request, settings: Settings = Depends(get_settings)):
             "color": settings.color,
             "environment": settings.environment,
             "voted": request.cookies.get(COOKIE) == settings.poll_id,
+            "store_down": store_down,
         },
+        status_code=status_code,
     )
+
+
+@app.get("/", response_class=HTMLResponse)
+def vote_page(request: Request, settings: Settings = Depends(get_settings)):
+    # Never touches storage, so the page renders even when the vote store is down.
+    return render_vote_page(request, settings)
 
 
 @app.get("/healthz")
@@ -116,6 +122,10 @@ def vote(
     try:
         table.create_entity({"PartitionKey": poll_id, "RowKey": str(uuid4()), "option": option})
     except AzureError:
+        if "text/html" in request.headers.get("accept", ""):
+            # A phone's form post gets the page back with a banner; API clients keep the JSON.
+            logger.exception("vote store unreachable")
+            return render_vote_page(request, settings, store_down=True, status_code=503)
         return store_unreachable()
     response = RedirectResponse("/", status_code=303)
     # Soft guard against double voting, not real security. No Secure flag: local runs are plain HTTP.

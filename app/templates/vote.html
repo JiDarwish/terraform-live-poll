@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ question }}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body style="--accent: {{ color }}">
+  <main>
+    <span class="badge badge-{{ environment }}">{{ environment | upper }}</span>
+    <h1>{{ question }}</h1>
+    {% if voted %}
+    <p class="thanks">Thanks, look at the screen</p>
+    <p><a href="/api/results">See the results</a></p>
+    {% else %}
+    <form method="post" action="/api/vote">
+      {% for option in options %}
+      <button type="submit" name="option" value="{{ option }}">{{ option }}</button>
+      {% endfor %}
+    </form>
+    {% endif %}
+  </main>
+</body>
+</html>

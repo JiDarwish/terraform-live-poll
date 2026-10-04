@@ -6,13 +6,17 @@ import os
 from collections import Counter
 from dataclasses import dataclass
 from functools import lru_cache
+from pathlib import Path
 from uuid import uuid4
 
 from azure.core.exceptions import AzureError
 from azure.data.tables import TableClient, TableServiceClient
 from fastapi import Depends, FastAPI, Form, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
+HERE = Path(__file__).parent
 logger = logging.getLogger("livepoll")
 COOKIE = "voted"
 
@@ -72,6 +76,24 @@ def store_unreachable() -> JSONResponse:
 
 
 app = FastAPI(title="Live Poll")
+app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
+templates = Jinja2Templates(directory=HERE / "templates")
+
+
+@app.get("/", response_class=HTMLResponse)
+def vote_page(request: Request, settings: Settings = Depends(get_settings)):
+    # Never touches storage, so the page renders even when the vote store is down.
+    return templates.TemplateResponse(
+        request,
+        "vote.html",
+        {
+            "question": settings.question,
+            "options": settings.options,
+            "color": settings.color,
+            "environment": settings.environment,
+            "voted": request.cookies.get(COOKIE) == settings.poll_id,
+        },
+    )
 
 
 @app.get("/healthz")

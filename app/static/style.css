@@ -55,6 +55,14 @@ button {
 
 button:active { filter: brightness(0.85); }
 
+.banner {
+  padding: 0.75rem 1rem;
+  border-radius: 0.4rem;
+  background: #fde8e8;
+  color: #9b1c1c;
+  font-weight: 600;
+}
+
 .thanks {
   font-size: 1.6rem;
   font-weight: 600;

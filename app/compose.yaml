@@ -1,0 +1,62 @@
+# Local run: the app against Azurite (Azure's storage emulator) in key mode.
+#   docker compose up
+#   POLL_QUESTION="Other?" docker compose up -d app   # a new poll, starting at zero
+
+x-storage: &storage
+  # Azurite's public, well-known development account key. Not a secret.
+  STORAGE_CONNECTION_STRING: "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;"
+  TABLE_NAME: votes
+
+services:
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    command: azurite-table --tableHost 0.0.0.0 --location /data --skipApiVersionCheck
+    ports:
+      - "127.0.0.1:10002:10002"  # localhost only, for the optional Azurite test
+    volumes:
+      - azurite-data:/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(10002, '127.0.0.1').on('connect', () => process.exit(0)).on('error', () => process.exit(1))"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  # In Azure, Terraform owns the table. Locally this one-shot step creates it,
+  # because the app never does.
+  table-init:
+    build: .
+    platform: linux/amd64
+    image: livepoll:dev
+    environment: *storage
+    command:
+      - python
+      - -c
+      - |
+        import os
+        from azure.data.tables import TableServiceClient
+        service = TableServiceClient.from_connection_string(os.environ["STORAGE_CONNECTION_STRING"])
+        service.create_table_if_not_exists(os.environ["TABLE_NAME"])
+        print("table ready:", os.environ["TABLE_NAME"])
+    depends_on:
+      azurite:
+        condition: service_healthy
+
+  app:
+    build: .
+    platform: linux/amd64
+    image: livepoll:dev
+    ports:
+      - "8000:8000"  # all interfaces, so phones on the same network can reach it
+    environment:
+      <<: *storage
+      POLL_QUESTION: ${POLL_QUESTION:-How confident are you with Terraform?}
+      POLL_OPTIONS: ${POLL_OPTIONS:-What's Terraform?|Heard of it|Used it|I could teach this}
+      POLL_COLOR: ${POLL_COLOR:-#2f7d5b}
+      ENVIRONMENT: ${ENVIRONMENT:-dev}
+      AUTH_MODE: key
+    depends_on:
+      table-init:
+        condition: service_completed_successfully
+
+volumes:
+  azurite-data:  # votes survive `docker compose down`, so older polls stay visible

@@ -1,8 +1,10 @@
 import hashlib
+import os
 import uuid
 
 import pytest
 from azure.core.exceptions import AzureError
+from fastapi.testclient import TestClient
 
 import main
 from conftest import make_settings
@@ -207,3 +209,28 @@ def test_page_does_not_touch_storage(client):
     main.app.dependency_overrides[main.get_table] = broken_table
     assert client.get("/").status_code == 200
     assert client.get("/healthz").status_code == 200
+
+
+# --- optional: against a real Azurite -------------------------------------
+
+@pytest.mark.skipif(
+    not os.getenv("AZURITE_CONNECTION_STRING"),
+    reason="set AZURITE_CONNECTION_STRING to run against a real Azurite",
+)
+def test_vote_against_azurite(settings_override):
+    # The question is unique per run so earlier runs' votes don't count.
+    settings = make_settings(
+        question=f"Integration {uuid.uuid4()}?",
+        connection_string=os.environ["AZURITE_CONNECTION_STRING"],
+    )
+    settings_override["settings"] = settings
+    service = main.TableServiceClient.from_connection_string(settings.connection_string)
+    service.create_table_if_not_exists(settings.table_name)
+    main.get_table.cache_clear()
+    with TestClient(main.app) as client:
+        r = client.post("/api/vote", data={"option": "Used it"}, follow_redirects=False)
+        assert r.status_code == 303
+        body = client.get("/api/results").json()
+    main.get_table.cache_clear()
+    assert body["total"] == 1
+    assert {"option": "Used it", "count": 1} in body["options"]

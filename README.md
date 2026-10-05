@@ -34,7 +34,7 @@ To also run the test against a real Azurite, set `AZURITE_CONNECTION_STRING` (wi
 
 ## Bootstrap (run once)
 
-`bootstrap/` creates the state storage account, the `rg-livepoll-*` resource groups and the presenter's access. It stores its own state in the container it creates, so the very first run starts with local state and then moves it. You need Terraform 1.16, the Azure CLI and Owner on the subscription.
+`bootstrap/` creates the state storage account, the `rg-livepoll-*` resource groups, the presenter's access and the CI identity GitHub Actions logs in with (OIDC, no secrets). It stores its own state in the container it creates, so the very first run starts with local state and then moves it. You need Terraform 1.16, the Azure CLI and Owner on the subscription.
 
 1. `az login`
 2. `cp bootstrap/terraform.tfvars.example bootstrap/terraform.tfvars` and fill in your subscription id and your own Entra object id. The file is gitignored.

@@ -27,3 +27,13 @@ output "prod_resource_group_name" {
   description = "Resource group for the prod environment, read by infra/."
   value       = azurerm_resource_group.prod.name
 }
+
+output "ci_identity_client_id" {
+  description = "Client id of the CI identity, the value of AZURE_CLIENT_ID in GitHub Actions."
+  value       = azurerm_user_assigned_identity.github.client_id
+}
+
+output "ci_identity_principal_id" {
+  description = "Object id of the CI identity, for `az role assignment list --assignee`."
+  value       = azurerm_user_assigned_identity.github.principal_id
+}

@@ -1,9 +1,9 @@
 # v2 spec: Live Poll, a Terraform demo you can vote on
 
 **Status:** draft for review, 2026-10-02
-**Author:** Ji (grilled by Claude)
+**Author:** the presenter (grilled by Claude)
 **Scope:** this spec stands alone. It replaces an earlier demo, and nothing from that demo is needed to build this one.
-**Presenter:** Fokke, **alone**. Nobody else is in the room to help, so every step must work for one person.
+**Presenter:** one person, **alone**. The presenter is also the only admin: they run bootstrap, own the subscription and approve prod. Nobody else is in the room to help, so every step must work for one person.
 
 ---
 
@@ -13,7 +13,7 @@ We deploy a **live room poll**. A QR code is on the projector. Trainees scan it 
 
 **The thesis of the day:** *everything goes through plan.* Terraform tells you what it is about to do before it does it, and keeps a written record (state) of what it did. Everything else follows from those two facts.
 
-**The rule the room sees all day without being told:** *Fokke's laptop changes dev. Only CI changes what is on your phone.*
+**The rule the room sees all day without being told:** *The presenter's laptop changes dev. Only CI changes what is on your phone.*
 
 ---
 
@@ -24,14 +24,14 @@ We deploy a **live room poll**. A QR code is on the projector. Trainees scan it 
 | D1 | The app is a live room poll that we write ourselves. No open-source app fits: the Azure voting app images were deleted from MCR, `example-voting-app` hardcodes its hosts and passwords, and Claper's questions are set up in its UI rather than by Terraform. |
 | D2 | This demo carries the whole training day. Every hands-on moment of the 4 hours runs on the poll. |
 | D3 | CI/CD runs **live** in the session, on a **public** personal repo `JiDarwish/terraform-live-poll`. |
-| D4 | Ji's existing work subscription (tenant Xomnia B.V., Ji is Owner). |
+| D4 | The presenter's existing work subscription (tenant Xomnia B.V., the presenter is Owner). |
 | D5 | Two environments, **dev** and **prod**. Same code. Separate state files. Separate `tfvars`. dev is changed only from the laptop. prod is changed only by CI, after an approval. |
 | D6 | **The room votes on prod all day.** One QR code, which never changes. |
 | D7 | A **data platform team** takes over the vote store mid-session, with its own root folder and its own state file in the same repo. The handover includes the "two owners fighting" beat. |
 | D8 | Drift comes in three kinds: a visible change on prod, CI catching it, and drift we accept on purpose (`ignore_changes`). |
 | D9 | The secret story ends with **managed identity + `shared_access_key_enabled = false`**. The key **stays in state**, because the resource always exports it, but Azure now refuses it. We never claim it disappears. |
 | D10 | Locking is shown with two terminals. `apply` holds the lock while it waits at the prompt. |
-| D11 | Fokke plays every role: two terminals with different colours and titles (`APP TEAM`, `DATA TEAM`). Every "other person" step also has a fallback script. |
+| D11 | The presenter plays every role: two terminals with different colours and titles (`APP TEAM`, `DATA TEAM`). Every "other person" step also has a fallback script. |
 | D12 | The app team finds the vote store after the handover with a **`data` source**. `terraform_remote_state` is named as the trap: it needs read access to the other team's whole state, secrets included. |
 | D13 | No local state anywhere, except the first run of `bootstrap/` (which is then migrated, see §5.1). |
 | D14 | Reset between sessions = **one tag + one script**. |
@@ -46,7 +46,7 @@ We deploy a **live room poll**. A QR code is on the projector. Trainees scan it 
 ```
 terraform-live-poll/                 # public, github.com/JiDarwish/terraform-live-poll
 ├── README.md                        # what this is, how to run it, link to RUNBOOK.md
-├── RUNBOOK.md                       # Fokke's choreography, act by act (written in implementation)
+├── RUNBOOK.md                       # the presenter's choreography, act by act (written in implementation)
 ├── CODEOWNERS                       # /data-platform/ owned by "data team" (illustrative)
 ├── app/                             # the poll app (§4)
 │   ├── main.py
@@ -56,7 +56,7 @@ terraform-live-poll/                 # public, github.com/JiDarwish/terraform-li
 │   ├── requirements.txt
 │   ├── Dockerfile
 │   └── compose.yaml                 # app + Azurite, for running locally
-├── bootstrap/                       # run once by Ji. State, identities, RGs, GitHub env (§5.1)
+├── bootstrap/                       # run once by the presenter. State, identities, RGs, GitHub env (§5.1)
 ├── infra/                           # APP TEAM root module, used for dev and prod (§5.2)
 │   ├── terraform.tf                 # required_providers, partial azurerm backend
 │   ├── main.tf
@@ -131,7 +131,7 @@ The **auth mode in the footer** matters: it is how the room sees Act 6 happen.
 ### 4.4 Image
 
 - `python:3.12-slim`, runs as a non-root user, `uvicorn` on port 8000.
-- Built for **`linux/amd64`** (the presenters use Apple Silicon Macs).
+- Built for **`linux/amd64`** (the presenter uses an Apple Silicon Mac).
 - Pushed to `ghcr.io/jidarwish/terraform-live-poll:<git-sha>` by the `app-image` workflow.
 - **The GHCR package must be made public once, by hand.** New GHCR packages are private by default.
 - Terraform pins the tag through `var.app_image_tag`. **The one image must support both auth modes**, so no app release happens during the session.
@@ -145,9 +145,9 @@ The **auth mode in the footer** matters: it is how the room sees Act 6 happen.
 
 ## 5. Infrastructure
 
-### 5.1 `bootstrap/` — run once by Ji
+### 5.1 `bootstrap/` — run once by the presenter
 
-The first run uses local state. **Then its state moves into the state container it just created** (`terraform init -migrate-state`, key `bootstrap.tfstate`), so Fokke can run `reset.sh` without Ji's laptop. One sentence for the room: *someone always has to go first.*
+The first run uses local state. **Then its state moves into the state container it just created** (`terraform init -migrate-state`, key `bootstrap.tfstate`), so `reset.sh` and any fresh clone use the remote state, not the first laptop's local file. One sentence for the room: *someone always has to go first.*
 
 Creates:
 
@@ -158,8 +158,8 @@ Creates:
 | `rg-livepoll-dev`, `rg-livepoll-prod` | **Owned by bootstrap.** `infra/` reads them with a `data` source. That is the first, small "someone else owns this" example. |
 | `id-livepoll-github` (user-assigned managed identity) | federated credentials for `repo:JiDarwish/terraform-live-poll:pull_request`, `…:ref:refs/heads/main`, `…:environment:prod` |
 | Role: CI identity | `Contributor` + `Role Based Access Control Administrator` on `rg-livepoll-prod`. `Storage Blob Data Contributor` on the `tfstate` container. |
-| Role: presenters (`var.presenter_object_ids`: Ji, Fokke) | `Owner` on `rg-livepoll-dev`. `Contributor` on `rg-livepoll-prod` (needed for the portal drift in Act 5, and itself a talking point). `Storage Blob Data Contributor` on `tfstate`. |
-| GitHub (`integrations/github` provider) | environment `prod` with Fokke and Ji as required reviewers. Actions variables `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`. **No secrets**: OIDC means there are none to store. |
+| Role: presenter (`var.presenter_object_id`) | `Owner` on `rg-livepoll-dev`. `Contributor` on `rg-livepoll-prod` (needed for the portal drift in Act 5, and itself a talking point). `Storage Blob Data Contributor` on `tfstate`. |
+| GitHub (`integrations/github` provider) | environment `prod` with the presenter as required reviewer. Actions variables `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`. **No secrets**: OIDC means there are none to store. |
 
 Why a user-assigned identity plus federated credentials instead of an Entra app registration: it needs no tenant-admin rights, and many tenants block app registrations.
 
@@ -189,7 +189,7 @@ azurerm_container_app.poll                # AUTH_MODE=key, secret = primary_conn
 - `template.min_replicas = 0` in both environments. The cold start is a few seconds on the first scan, which is fine.
 - `revision_mode = "Single"`.
 - The poll question, options and colour live in `envs/{env}.tfvars`. Everything else is code, shared by both environments.
-- **Backend:** partial config, `backend "azurerm" {}` + `-backend-config=envs/{env}.backend.hcl`, `use_azuread_auth = true`. Fokke runs `init` once, against dev only.
+- **Backend:** partial config, `backend "azurerm" {}` + `-backend-config=envs/{env}.backend.hcl`, `use_azuread_auth = true`. The presenter runs `init` once, against dev only.
 
 **Outputs:** `poll_url`, `results_url`, `storage_account_name`, `container_app_name`, and `vote_store_connection_string` with `sensitive = true` (removed again in Act 6).
 
@@ -239,7 +239,7 @@ All Azure logins use **OIDC** (`azure/login` with `client-id`, `tenant-id`, `sub
 
 - bootstrap applied and its state migrated.
 - **prod deployed by CI the day before**, in key mode. The QR code works.
-- **dev empty.** Fokke's terminal is `init`ed against the dev backend.
+- **dev empty.** The presenter's terminal is `init`ed against the dev backend.
 - `main` == tag `session-start`. The scenario branches (§7.3) exist.
 - Two terminal profiles: **APP TEAM** (`infra/`, one colour) and **DATA TEAM** (`data-platform/`, another colour). Browser tabs: prod `/results`, dev `/results`, the GitHub repo, the portal.
 
@@ -319,7 +319,7 @@ Closing beat: *"The .tf file is what I want. The state file is what Terraform di
 
 ### 7.6 Act 3 — Through the front door (prod, CI)
 
-1. **The room picks the next question** (and options). Fokke edits `envs/prod.tfvars` on a new branch, pushes, opens a PR.
+1. **The room picks the next question** (and options). The presenter edits `envs/prod.tfvars` on a new branch, pushes, opens a PR.
 2. While CI runs, walk through `_terraform-plan.yml`: OIDC, no secrets, `fmt`/`validate`/`plan`.
 3. The PR comment: `0 to add, 1 to change, 0 to destroy`. Read the env var diff.
 4. Merge → `infra-apply` → **approval** in the `prod` environment → apply → **phones change**.
@@ -381,7 +381,7 @@ Closing beat of the day: *"Terraform doesn't manage your cloud. It manages what 
   - `delete-dev-state.sh`
   - `restore-dev-state.sh`
   - `try-old-key.sh`
-- **`RUNBOOK.md`:** Fokke's script for the day. It starts with a setup and morning-of checklist. Then, for each act:
+- **`RUNBOOK.md`:** the presenter's script for the day. It starts with a setup and morning-of checklist. Then, for each act:
   - a header line: act name, minutes, where it sits in the run sheet
   - a step table (example below)
   - the closing beat, quoted
@@ -400,13 +400,13 @@ Closing beat of the day: *"Terraform doesn't manage your cloud. It manages what 
 
   Keep it short: commands and beats, no long prose.
 - **Fallback recordings** of every act, made during the final rehearsal.
-- **A volunteer (optional):** a trainee types `yes` in the locking demo when Fokke says so.
+- **A volunteer (optional):** a trainee types `yes` in the locking demo when the presenter says so.
 
 ---
 
-## 9. Deck alignment (for Fokke; not an implementation task)
+## 9. Deck alignment (for the presenter; not an implementation task)
 
-Fokke owns and updates the slides. These are the places where slides and demo must agree:
+The presenter owns and updates the slides. These are the places where slides and demo must agree:
 
 - **The annotated `main.tf` slide** uses `infra/main.tf`, which therefore needs: a data source, a cross-resource reference, a `sensitive` output, and a variable with a `validation` block (on `environment`).
 - **The remote-state slide:** partial backend config, `use_azuread_auth`, versioning, and the lock error text from Act 2. The second command fails at once; it does not wait.
@@ -417,7 +417,7 @@ Fokke owns and updates the slides. These are the places where slides and demo mu
 
 ## 10. Reset: `scripts/reset.sh`
 
-Run **the day before** every session. It takes about 15 min. Anyone in `presenter_object_ids` can run it.
+Run **the day before** every session. It takes about 15 min. The presenter runs it.
 
 ```
 1. az group delete -n rg-livepoll-dev  --yes   (in parallel with prod)
@@ -476,13 +476,13 @@ The research is from 2026-10-02. **azurerm 5.x is new.** Check every argument ag
 | # | Milestone | Done when |
 |---|---|---|
 | M1 | App | `docker compose up` → vote on a phone over the LAN, results update within 2 s. Tests pass. Key mode works against Azurite. Identity mode is covered by a unit test here and proven against Azure in M3. |
-| M2 | bootstrap | applied, state migrated, GitHub env and variables exist, Fokke can `init` dev |
+| M2 | bootstrap | applied, state migrated, GitHub env and variables exist, the presenter can `init` dev |
 | M3 | `infra/` on dev | apply from the laptop → working dev URL. `state pull` shows the key. |
 | M4 | Workflows + prod | a PR shows a plan comment. Merge → approval → prod URL works. Drift workflow goes red on a portal edit and opens an issue. |
 | M5 | Scenario branches | every branch in §7.3 gives the plan its act expects, checked on prod |
 | M6 | Handover | Act 7 on dev and prod: the votes survive, and nothing is destroyed in any plan |
-| M7 | `reset.sh` | it runs from Fokke's laptop and gets back to §7.1 |
-| M8 | `RUNBOOK.md` + `scenarios/` | Fokke can run the whole session alone from the runbook |
+| M7 | `reset.sh` | it runs from the presenter's laptop and gets back to §7.1 |
+| M8 | `RUNBOOK.md` + `scenarios/` | the presenter can run the whole session alone from the runbook |
 | M9 | Full rehearsal | all acts timed, §11 decided, fallback recordings captured |
 
-**Definition of done for v2:** Fokke runs one full rehearsal alone, from `reset.sh` to Act 7, without help from Ji.
+**Definition of done for v2:** the presenter runs one full rehearsal alone, from `reset.sh` to Act 7, without help.

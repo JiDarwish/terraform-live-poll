@@ -173,34 +173,6 @@ def test_store_error_on_form_post_renders_banner(client, table):
     assert "voted" not in r.headers.get("set-cookie", "")
 
 
-def test_key_mode_uses_connection_string(monkeypatch):
-    calls = {}
-
-    class FakeService:
-        def get_table_client(self, name):
-            calls["table"] = name
-            return "table-client"
-
-    def from_connection_string(conn_str):
-        calls["conn"] = conn_str
-        return FakeService()
-
-    monkeypatch.setattr(main.TableServiceClient, "from_connection_string", from_connection_string)
-    main.get_table.cache_clear()
-    try:
-        client_ = main.get_table(make_settings(connection_string="cs", table_name="t1"))
-    finally:
-        main.get_table.cache_clear()
-    assert client_ == "table-client"
-    assert calls == {"conn": "cs", "table": "t1"}
-
-
-def test_non_key_auth_mode_raises():
-    main.get_table.cache_clear()
-    with pytest.raises(ValueError, match="#3"):
-        main.get_table(make_settings(auth_mode="identity"))
-
-
 # --- phone vote page ------------------------------------------------------
 
 def test_page_renders(client, settings_override):

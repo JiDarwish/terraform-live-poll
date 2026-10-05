@@ -12,6 +12,7 @@ from uuid import uuid4
 import segno
 from azure.core.exceptions import AzureError
 from azure.data.tables import TableClient, TableServiceClient
+from azure.identity import ManagedIdentityCredential
 from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -20,6 +21,8 @@ from fastapi.templating import Jinja2Templates
 HERE = Path(__file__).parent
 logger = logging.getLogger("livepoll")
 COOKIE = "voted"
+# Reads retry with backoff (0 s, 1 s, 2 s), 403 included: a new role assignment can take minutes to propagate.
+RETRY = dict(retry_total=3, retry_backoff_factor=0.5, retry_on_status_codes=[403])
 
 
 @dataclass(frozen=True)
@@ -31,6 +34,8 @@ class Settings:
     auth_mode: str
     table_name: str
     connection_string: str
+    account_name: str
+    client_id: str
     revision: str
 
     @property
@@ -66,6 +71,8 @@ def get_settings() -> Settings:
         auth_mode=os.environ.get("AUTH_MODE", "key"),
         table_name=os.environ.get("TABLE_NAME", "votes"),
         connection_string=os.environ.get("STORAGE_CONNECTION_STRING", ""),
+        account_name=os.environ.get("STORAGE_ACCOUNT_NAME", ""),
+        client_id=os.environ.get("AZURE_CLIENT_ID", ""),
         # Container Apps sets this per revision; `or` also turns an empty value into "local".
         revision=os.environ.get("CONTAINER_APP_REVISION") or "local",
     )
@@ -74,9 +81,14 @@ def get_settings() -> Settings:
 @lru_cache
 def get_table(settings: Settings = Depends(get_settings)) -> TableClient:
     # The app never creates the table: Terraform (or compose's table-init) owns it.
-    if settings.auth_mode != "key":
-        raise ValueError(f"AUTH_MODE={settings.auth_mode} arrives in #3")
-    service = TableServiceClient.from_connection_string(settings.connection_string)
+    if settings.auth_mode == "key":
+        service = TableServiceClient.from_connection_string(settings.connection_string, **RETRY)
+    elif settings.auth_mode == "identity":
+        endpoint = f"https://{settings.account_name}.table.core.windows.net"
+        credential = ManagedIdentityCredential(client_id=settings.client_id)
+        service = TableServiceClient(endpoint, credential=credential, **RETRY)
+    else:
+        raise ValueError(f"AUTH_MODE must be key or identity, got {settings.auth_mode!r}")
     return service.get_table_client(settings.table_name)
 
 

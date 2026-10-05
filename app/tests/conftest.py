@@ -38,6 +38,8 @@ def make_settings(**overrides):
         auth_mode="key",
         table_name="votes",
         connection_string="UseDevelopmentStorage=true",
+        account_name="",
+        client_id="",
         revision="local",
     )
     values.update(overrides)

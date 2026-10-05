@@ -151,18 +151,21 @@ def test_unknown_option_400(client, table):
     assert table.entities == []
 
 
-def test_store_error_returns_503(client, table):
+def test_store_error_returns_503(client, table, caplog):
     table.error = AzureError("boom")
     r = client.post("/api/vote", data={"option": "Used it"}, follow_redirects=False)
     assert r.status_code == 503
     assert r.json() == {"error": "vote store unreachable"}
     assert "voted" not in r.headers.get("set-cookie", "")
+    assert "vote store unreachable: AzureError: boom" in caplog.text
+    caplog.clear()
     r = client.get("/api/results")
     assert r.status_code == 503
     assert r.json() == {"error": "vote store unreachable"}
+    assert "vote store unreachable: AzureError: boom" in caplog.text
 
 
-def test_store_error_on_form_post_renders_banner(client, table):
+def test_store_error_on_form_post_renders_banner(client, table, caplog):
     table.error = AzureError("boom")
     r = client.post(
         "/api/vote", data={"option": "Used it"}, headers={"Accept": "text/html"}, follow_redirects=False
@@ -171,6 +174,7 @@ def test_store_error_on_form_post_renders_banner(client, table):
     assert "text/html" in r.headers["content-type"]
     assert "Can't reach the vote store" in r.text
     assert "voted" not in r.headers.get("set-cookie", "")
+    assert caplog.text.count("vote store unreachable: AzureError: boom") == 1
 
 
 # --- phone vote page ------------------------------------------------------

@@ -14,14 +14,15 @@
     <p class="banner" role="alert" hidden>Can't reach the vote store</p>
     <div class="results-grid">
       <section>
+        {# Loop tags sit in HTML comments so the <ul> never holds bare text (WCAG 1.3.1). #}
         <ul class="bars">
-          {% for option in options %}
+          <!-- {% for option in options %} -->
           <li data-option="{{ option }}">
             <span class="label">{{ option }}</span>
             <span class="track"><span class="bar" style="width: 0"></span></span>
             <span class="count">–</span>
           </li>
-          {% endfor %}
+          <!-- {% endfor %} -->
         </ul>
         <p class="total"><span class="total-count">–</span> votes</p>
       </section>

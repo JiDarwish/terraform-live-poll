@@ -120,6 +120,8 @@ a { color: var(--accent); }
   display: block;
   height: 100%;
   background: var(--accent);
+  /* Dark edge keeps a light POLL_COLOR visible against the light track. */
+  box-shadow: inset 0 0 0 3px #111;
   transition: width 0.4s;
 }
 

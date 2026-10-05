@@ -32,12 +32,12 @@ pytest app/tests
 
 To also run the test against a real Azurite, set `AZURITE_CONNECTION_STRING` (with `TableEndpoint=http://127.0.0.1:10002/devstoreaccount1;`) while `docker compose up` is running.
 
-## Bootstrap (run once, Ji)
+## Bootstrap (run once)
 
-`bootstrap/` creates the state storage account, the `rg-livepoll-*` resource groups and the presenters' access. It stores its own state in the container it creates, so the very first run starts with local state and then moves it. You need Terraform 1.16, the Azure CLI and Owner on the subscription.
+`bootstrap/` creates the state storage account, the `rg-livepoll-*` resource groups and the presenter's access. It stores its own state in the container it creates, so the very first run starts with local state and then moves it. You need Terraform 1.16, the Azure CLI and Owner on the subscription.
 
 1. `az login`
-2. `cp bootstrap/terraform.tfvars.example bootstrap/terraform.tfvars` and fill it in. The file is gitignored.
+2. `cp bootstrap/terraform.tfvars.example bootstrap/terraform.tfvars` and fill in your subscription id and your own Entra object id. The file is gitignored.
 3. `printf 'terraform {\n  backend "local" {}\n}\n' > bootstrap/local_override.tf` (gitignored: it swaps in a local backend for this run only).
 4. `terraform -chdir=bootstrap init`, then `terraform -chdir=bootstrap apply`. If the apply fails with a 403 on the new storage account, your blob role is still propagating: wait a few minutes and apply again.
 5. `rm bootstrap/local_override.tf`
@@ -46,4 +46,4 @@ To also run the test against a real Azurite, set `AZURITE_CONNECTION_STRING` (wi
 8. `rm bootstrap/terraform.tfstate bootstrap/terraform.tfstate.backup`
 9. If `bootstrap/.terraform.lock.hcl` is not committed yet: `terraform -chdir=bootstrap providers lock -platform=darwin_arm64 -platform=darwin_amd64 -platform=linux_amd64`, then commit it.
 
-After this, anyone in `presenter_object_ids` runs plain `terraform -chdir=bootstrap init`. It uses the remote state, signed in with `az login`, because account keys are turned off.
+After this, on any clone, plain `terraform -chdir=bootstrap init` uses the remote state, signed in with `az login`, because account keys are turned off.

@@ -68,32 +68,26 @@ resource "azurerm_storage_container" "tfstate" {
   }
 }
 
-# Presenter access. One block per role, one assignment per presenter.
+# Presenter access. One assignment per role.
 
 resource "azurerm_role_assignment" "presenter_dev_owner" {
-  for_each = var.presenter_object_ids
-
   scope                = azurerm_resource_group.dev.id
   role_definition_name = "Owner"
-  principal_id         = each.value
+  principal_id         = var.presenter_object_id
   principal_type       = "User"
 }
 
 # Needed for the portal drift in Act 5.
 resource "azurerm_role_assignment" "presenter_prod_contributor" {
-  for_each = var.presenter_object_ids
-
   scope                = azurerm_resource_group.prod.id
   role_definition_name = "Contributor"
-  principal_id         = each.value
+  principal_id         = var.presenter_object_id
   principal_type       = "User"
 }
 
 resource "azurerm_role_assignment" "presenter_tfstate_blob" {
-  for_each = var.presenter_object_ids
-
   scope                = azurerm_storage_container.tfstate.id
   role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = each.value
+  principal_id         = var.presenter_object_id
   principal_type       = "User"
 }

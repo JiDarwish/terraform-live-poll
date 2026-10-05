@@ -1,14 +1,9 @@
 # Copy to terraform.tfvars (gitignored) and fill in real values.
-# Anyone who runs reset.sh needs the same presenter map: a missing entry removes that person's access.
 
 # az account show --query id -o tsv
 subscription_id = "00000000-0000-0000-0000-000000000000"
 
 # location = "westeurope"
 
-presenter_object_ids = {
-  # Your own:     az ad signed-in-user show --query id -o tsv
-  # Someone else: az ad user show --id <upn> --query id -o tsv
-  ji    = "00000000-0000-0000-0000-000000000001"
-  fokke = "00000000-0000-0000-0000-000000000002"
-}
+# az ad signed-in-user show --query id -o tsv
+presenter_object_id = "00000000-0000-0000-0000-000000000001"

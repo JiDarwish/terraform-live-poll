@@ -1,5 +1,6 @@
 import hashlib
 import os
+import re
 import uuid
 
 import pytest
@@ -190,6 +191,7 @@ def test_page_renders(client, settings_override):
     assert "#2f7d5b" in html
     assert 'name="viewport"' in html
     assert "<script" not in html
+    assert "Can't reach the vote store" not in html
 
 
 def test_page_shows_thanks_after_vote(client):
@@ -215,12 +217,21 @@ def test_static_css_served(client):
     assert ".results-page" in r.text
 
 
-def test_page_does_not_touch_storage(client):
+def test_page_shows_banner_when_store_down(client, table, settings_override, caplog):
+    table.error = AzureError("boom")
+    r = client.get("/")
+    # The page still rendered, and the buttons stay so a phone can retry once the store is back.
+    assert r.status_code == 200
+    assert "Can't reach the vote store" in r.text
+    assert r.text.count("<button") == len(settings_override["settings"].options)
+    assert "vote store unreachable: AzureError: boom" in caplog.text
+
+
+def test_healthz_does_not_touch_storage(client):
     def broken_table():
-        raise RuntimeError("storage must not be touched by /")
+        raise RuntimeError("storage must not be touched by /healthz")
 
     main.app.dependency_overrides[main.get_table] = broken_table
-    assert client.get("/").status_code == 200
     assert client.get("/healthz").status_code == 200
 
 
@@ -272,6 +283,15 @@ def test_results_page_does_not_touch_storage(client):
 
     main.app.dependency_overrides[main.get_table] = broken_table
     assert client.get("/results").status_code == 200
+
+
+def test_results_page_has_banner_for_js(client, table):
+    # /results never reads the store; results.js un-hides this banner when /api/results fails.
+    table.error = AzureError("boom")
+    r = client.get("/results")
+    assert r.status_code == 200
+    assert re.search(r"<[^>]*\bhidden\b[^>]*>Can't reach the vote store<", r.text)
+    assert "banner.hidden = false" in client.get("/static/results.js").text
 
 
 def test_results_page_escapes_question(client, settings_override):

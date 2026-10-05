@@ -96,15 +96,16 @@ app.mount("/static", StaticFiles(directory=HERE / "static"), name="static")
 templates = Jinja2Templates(directory=HERE / "templates")
 
 
+def page_context(settings: Settings) -> dict:
+    return {k: getattr(settings, k) for k in ("question", "options", "color", "environment")}
+
+
 def render_vote_page(request: Request, settings: Settings, store_down: bool = False, status_code: int = 200):
     return templates.TemplateResponse(
         request,
         "vote.html",
         {
-            "question": settings.question,
-            "options": settings.options,
-            "color": settings.color,
-            "environment": settings.environment,
+            **page_context(settings),
             "voted": request.cookies.get(COOKIE) == settings.poll_id,
             "store_down": store_down,
         },
@@ -127,10 +128,7 @@ def results_page(request: Request, settings: Settings = Depends(get_settings)):
         request,
         "results.html",
         {
-            "question": settings.question,
-            "options": settings.options,
-            "color": settings.color,
-            "environment": settings.environment,
+            **page_context(settings),
             "auth_label": settings.auth_label,
             "revision": settings.revision,
             "poll_id": settings.poll_id,

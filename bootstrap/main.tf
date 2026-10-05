@@ -2,6 +2,9 @@ locals {
   # Fixed, globally unique name. The backend block can't use variables.
   state_storage_account_name = "stlivepolltfjd01" # must match bootstrap/terraform.tf
 
+  github_repository  = "JiDarwish/terraform-live-poll"
+  github_oidc_issuer = "https://token.actions.githubusercontent.com"
+
   tags = {
     managed-by = "terraform/bootstrap"
   }
@@ -90,4 +93,46 @@ resource "azurerm_role_assignment" "presenter_tfstate_blob" {
   role_definition_name = "Storage Blob Data Contributor"
   principal_id         = var.presenter_object_id
   principal_type       = "User"
+}
+
+# CI identity. GitHub Actions logs in with OIDC: no app registration, no secrets.
+# It lives in the tfstate RG, out of reach of its own Contributor rights on prod.
+
+resource "azurerm_user_assigned_identity" "github" {
+  name                = "id-livepoll-github"
+  resource_group_name = azurerm_resource_group.tfstate.name
+  location            = azurerm_resource_group.tfstate.location
+  tags                = local.tags
+}
+
+# PR plans.
+resource "azurerm_federated_identity_credential" "github_pull_request" {
+  name                      = "fc-github-pull-request"
+  user_assigned_identity_id = azurerm_user_assigned_identity.github.id
+  issuer                    = local.github_oidc_issuer
+  audience                  = ["api://AzureADTokenExchange"]
+  subject                   = "repo:${local.github_repository}:pull_request"
+}
+
+# Pushes to main and the drift check.
+resource "azurerm_federated_identity_credential" "github_main" {
+  name                      = "fc-github-main"
+  user_assigned_identity_id = azurerm_user_assigned_identity.github.id
+  issuer                    = local.github_oidc_issuer
+  audience                  = ["api://AzureADTokenExchange"]
+  subject                   = "repo:${local.github_repository}:ref:refs/heads/main"
+
+  # Azure returns 409 on concurrent credential writes to one identity, so write them in turn.
+  depends_on = [azurerm_federated_identity_credential.github_pull_request]
+}
+
+# The prod apply job, behind the prod environment.
+resource "azurerm_federated_identity_credential" "github_prod" {
+  name                      = "fc-github-environment-prod"
+  user_assigned_identity_id = azurerm_user_assigned_identity.github.id
+  issuer                    = local.github_oidc_issuer
+  audience                  = ["api://AzureADTokenExchange"]
+  subject                   = "repo:${local.github_repository}:environment:prod"
+
+  depends_on = [azurerm_federated_identity_credential.github_main]
 }

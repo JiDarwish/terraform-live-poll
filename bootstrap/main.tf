@@ -2,8 +2,10 @@ locals {
   # Fixed, globally unique name. The backend block can't use variables.
   state_storage_account_name = "stlivepolltfjd01" # must match bootstrap/terraform.tf
 
-  github_repository  = "JiDarwish/terraform-live-poll"
-  github_oidc_issuer = "https://token.actions.githubusercontent.com"
+  github_owner           = "JiDarwish"
+  github_repository_name = "terraform-live-poll"
+  github_repository      = "${local.github_owner}/${local.github_repository_name}"
+  github_oidc_issuer     = "https://token.actions.githubusercontent.com"
 
   tags = {
     managed-by = "terraform/bootstrap"

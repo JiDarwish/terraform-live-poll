@@ -1,7 +1,7 @@
 # Implementation plan: Live Poll
 
 ## Overview
-Build the live-poll Terraform demo described in [SPEC.md](../SPEC.md): a FastAPI poll app on Azure Container Apps, a bootstrap layer (state, identities, GitHub environment), an app-team root module for dev and prod, a data-platform root module that takes over the vote store mid-session, GitHub Actions for plan/apply/drift, prepared scenario branches, a reset script and a runbook Fokke can present from alone.
+Build the live-poll Terraform demo described in [SPEC.md](../SPEC.md): a FastAPI poll app on Azure Container Apps, a bootstrap layer (state, identities, GitHub environment), an app-team root module for dev and prod, a data-platform root module that takes over the vote store mid-session, GitHub Actions for plan/apply/drift, prepared scenario branches, a reset script and a runbook the presenter can present from alone.
 
 ## Where the tasks live
 **Tasks are tracked as GitHub issues in [JiDarwish/terraform-live-poll](https://github.com/JiDarwish/terraform-live-poll/issues)**, one per task, task N = issue #N. This file is the ordered index; the issue is the source of truth for acceptance criteria.
@@ -26,7 +26,7 @@ _Done when:_ `docker compose up` → vote on a phone over the LAN, results updat
 - [ ] [#4](https://github.com/JiDarwish/terraform-live-poll/issues/4) CI: build and publish the app image to GHCR · `ci` · S · blocked by [#2](https://github.com/JiDarwish/terraform-live-poll/issues/2), [#3](https://github.com/JiDarwish/terraform-live-poll/issues/3)
 
 ### M2 · Bootstrap
-_Done when:_ Bootstrap applied, its state migrated, GitHub environment and variables exist, Fokke can `init` dev.
+_Done when:_ Bootstrap applied, its state migrated, GitHub environment and variables exist, the presenter can `init` dev.
 
 - [ ] [#5](https://github.com/JiDarwish/terraform-live-poll/issues/5) Bootstrap: state storage, resource groups and presenter access · `infra` · M · blocked by —
 - [ ] [#6](https://github.com/JiDarwish/terraform-live-poll/issues/6) Bootstrap: CI identity with OIDC federation · `infra` · S · blocked by [#5](https://github.com/JiDarwish/terraform-live-poll/issues/5)
@@ -61,12 +61,12 @@ _Done when:_ Act 7 on dev and prod: the votes survive, and nothing is destroyed 
 - [ ] [#19](https://github.com/JiDarwish/terraform-live-poll/issues/19) Act 7, app team side: release, data sources and prod handover · `infra` · M · blocked by [#18](https://github.com/JiDarwish/terraform-live-poll/issues/18)
 
 ### M7 · Reset
-_Done when:_ `scripts/reset.sh` runs from Fokke's laptop and gets back to SPEC §7.1.
+_Done when:_ `scripts/reset.sh` runs from the presenter's laptop and gets back to SPEC §7.1.
 
 - [ ] [#20](https://github.com/JiDarwish/terraform-live-poll/issues/20) scripts/reset.sh: back to session start in one command · `infra` · S · blocked by [#19](https://github.com/JiDarwish/terraform-live-poll/issues/19)
 
 ### M8 · Runbook
-_Done when:_ Fokke can run the whole session alone from RUNBOOK.md, with fallback scripts for every 'other person' step.
+_Done when:_ the presenter can run the whole session alone from RUNBOOK.md, with fallback scripts for every 'other person' step.
 
 - [ ] [#21](https://github.com/JiDarwish/terraform-live-poll/issues/21) scenarios/: fallback scripts for every 'other person' step · `runbook` · S · blocked by [#13](https://github.com/JiDarwish/terraform-live-poll/issues/13), [#17](https://github.com/JiDarwish/terraform-live-poll/issues/17)
 - [ ] [#22](https://github.com/JiDarwish/terraform-live-poll/issues/22) RUNBOOK.md part 1: setup, morning-of checklist, Acts 1–3 · `runbook` · M · blocked by [#12](https://github.com/JiDarwish/terraform-live-poll/issues/12), [#21](https://github.com/JiDarwish/terraform-live-poll/issues/21)
@@ -74,11 +74,11 @@ _Done when:_ Fokke can run the whole session alone from RUNBOOK.md, with fallbac
 - [ ] [#24](https://github.com/JiDarwish/terraform-live-poll/issues/24) README and presenter laptop setup · `runbook` · S · blocked by [#14](https://github.com/JiDarwish/terraform-live-poll/issues/14)
 
 ### M9 · Rehearsal
-_Done when:_ All acts timed, §11 decided, fallback recordings captured, Fokke ran it solo.
+_Done when:_ All acts timed, §11 decided, fallback recordings captured, the presenter ran it solo.
 
 - [ ] [#25](https://github.com/JiDarwish/terraform-live-poll/issues/25) Cut the session-start tag and rebase the scenario branches · `infra` · S · blocked by [#20](https://github.com/JiDarwish/terraform-live-poll/issues/20), [#23](https://github.com/JiDarwish/terraform-live-poll/issues/23), [#24](https://github.com/JiDarwish/terraform-live-poll/issues/24)
 - [ ] [#26](https://github.com/JiDarwish/terraform-live-poll/issues/26) Full rehearsal and the §11 decisions · `runbook` · M · blocked by [#25](https://github.com/JiDarwish/terraform-live-poll/issues/25)
-- [ ] [#27](https://github.com/JiDarwish/terraform-live-poll/issues/27) Solo rehearsal by Fokke and fallback recordings · `runbook` · M · blocked by [#26](https://github.com/JiDarwish/terraform-live-poll/issues/26)
+- [ ] [#27](https://github.com/JiDarwish/terraform-live-poll/issues/27) Solo rehearsal by the presenter and fallback recordings · `runbook` · M · blocked by [#26](https://github.com/JiDarwish/terraform-live-poll/issues/26)
 
 ## Checkpoints
 
@@ -88,7 +88,7 @@ _Done when:_ All acts timed, §11 decided, fallback recordings captured, Fokke r
 
 ### After M3 (#5–#10)
 - [ ] Dev works end to end from the laptop
-- [ ] Spike #10 outcome known — **review with Ji: does Act 6/7 wording change?**
+- [ ] Spike #10 outcome known — **review: does Act 6/7 wording change?**
 
 ### After M4 (#11–#14)
 - [ ] A question change goes PR → approval → phones
@@ -99,8 +99,8 @@ _Done when:_ All acts timed, §11 decided, fallback recordings captured, Fokke r
 - [ ] Handover done on prod with votes intact
 
 ### Done (#20–#27)
-- [ ] Reset works from Fokke's laptop
-- [ ] Fokke ran the session solo (definition of done)
+- [ ] Reset works from the presenter's laptop
+- [ ] The presenter ran the session solo (definition of done)
 
 ## Dependency graph (critical path in bold)
 
@@ -115,7 +115,7 @@ _Done when:_ All acts timed, §11 decided, fallback recordings captured, Fokke r
 #12 → #15 act4 → #16 act5 → #17 act6 (+#10) → #18 act7 data → #19 act7 app → #20 reset
 #13,#17 → #21 scenarios → #22 runbook 1 → #23 runbook 2 (+#19)
 #14 → #24 README
-**#20 + #23 + #24 → #25 tag → #26 rehearsal → #27 Fokke solo**
+**#20 + #23 + #24 → #25 tag → #26 rehearsal → #27 presenter solo**
 ```
 
 ## Parallel work
@@ -129,7 +129,7 @@ _Done when:_ All acts timed, §11 decided, fallback recordings captured, Fokke r
 | Risk | Impact | Mitigation |
 |---|---|---|
 | azurerm 5.x arguments differ from what the spec assumes | Med | Check every argument against the 5.8 docs (#8, #9, #18); SPEC §12 lists the known unknowns |
-| Key still/no longer in state when key auth is off | High (changes Act 6/7 wording) | Spike #10 before any branch work; checkpoint review with Ji |
+| Key still/no longer in state when key auth is off | High (changes Act 6/7 wording) | Spike #10 before any branch work; checkpoint review by the presenter |
 | Container Apps environment is slow to create | Med (Act 1 stalls) | Measured in #9; §11 rule moves it to bootstrap if over 4 min |
 | Role assignment propagation (up to 30 min) | High (Act 6 breaks live) | App identity + role exist from day one; `reset.sh` runs the day before |
 | Required reviewers not available on GitHub Free | High (no approval gate) | Confirmed in #7, early; fallback is GitHub Pro |
@@ -137,5 +137,5 @@ _Done when:_ All acts timed, §11 decided, fallback recordings captured, Fokke r
 | Public repo exposes something sensitive | Low | No secrets anywhere (OIDC); state never in git; `.gitignore` from day one |
 
 ## Open questions
-- Fokke's Entra object id and GitHub username (needed by #5 and #7).
+- The presenter's Entra object id and GitHub username (needed by #5 and #7).
 - Where the fallback recordings are stored (#27).

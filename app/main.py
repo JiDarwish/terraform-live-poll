@@ -21,7 +21,7 @@ from fastapi.templating import Jinja2Templates
 HERE = Path(__file__).parent
 logger = logging.getLogger("livepoll")
 COOKIE = "voted"
-# Reads retry with backoff (0 s, 1 s, 2 s), 403 included: a new role assignment can take minutes to propagate.
+# Reads retry, 403 included, with backoff (0 s, 1 s, 2 s): new role assignments take minutes to propagate.
 RETRY = dict(retry_total=3, retry_backoff_factor=0.5, retry_on_status_codes=[403])
 
 
@@ -118,27 +118,27 @@ def page_context(settings: Settings) -> dict:
 
 
 def render_vote_page(request: Request, settings: Settings, store_down: bool = False, status_code: int = 200):
-    return templates.TemplateResponse(
-        request,
-        "vote.html",
-        {
-            **page_context(settings),
-            "voted": request.cookies.get(COOKIE) == settings.poll_id,
-            "store_down": store_down,
-        },
-        status_code=status_code,
-    )
+    voted = request.cookies.get(COOKIE) == settings.poll_id
+    context = {**page_context(settings), "voted": voted, "store_down": store_down}
+    return templates.TemplateResponse(request, "vote.html", context, status_code=status_code)
 
 
 @app.get("/", response_class=HTMLResponse)
-def vote_page(request: Request, settings: Settings = Depends(get_settings)):
-    # Never touches storage, so the page renders even when the vote store is down.
+def vote_page(
+    request: Request, settings: Settings = Depends(get_settings), table: TableClient = Depends(get_table)
+):
+    # Reads the store so a phone sees the banner before it taps; the page still renders (200).
+    try:
+        count_votes(settings, table)
+    except AzureError as exc:
+        log_store_down(exc)
+        return render_vote_page(request, settings, store_down=True)
     return render_vote_page(request, settings)
 
 
 @app.get("/results", response_class=HTMLResponse)
 def results_page(request: Request, settings: Settings = Depends(get_settings)):
-    # Never touches storage either: results.js fetches the counts from /api/results.
+    # Never touches storage: results.js fetches the counts from /api/results.
     # The QR points at the host the projector used, so the app never needs its own FQDN.
     vote_url = str(request.url_for("vote_page"))
     return templates.TemplateResponse(

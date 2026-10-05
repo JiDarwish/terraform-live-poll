@@ -92,9 +92,14 @@ def get_table(settings: Settings = Depends(get_settings)) -> TableClient:
     return service.get_table_client(settings.table_name)
 
 
-def store_unreachable() -> JSONResponse:
-    logger.exception("vote store unreachable")
-    return JSONResponse({"error": "vote store unreachable"}, status_code=503)
+def log_store_down(exc: Exception) -> None:
+    # One line, no traceback: the projector polls every 2 s and the cause must stay readable.
+    logger.error("vote store unreachable: %s: %s", type(exc).__name__, exc)
+
+
+def count_votes(settings: Settings, table: TableClient) -> Counter:
+    rows = table.query_entities("PartitionKey eq @pk", parameters={"pk": settings.poll_id}, select=["option"])
+    return Counter(row["option"] for row in rows)
 
 
 def qr_svg(url: str) -> str:
@@ -169,12 +174,12 @@ def vote(
         return JSONResponse({"error": "unknown option"}, status_code=400)
     try:
         table.create_entity({"PartitionKey": poll_id, "RowKey": str(uuid4()), "option": option})
-    except AzureError:
+    except AzureError as exc:
+        log_store_down(exc)
         if "text/html" in request.headers.get("accept", ""):
             # A phone's form post gets the page back with a banner; API clients keep the JSON.
-            logger.exception("vote store unreachable")
             return render_vote_page(request, settings, store_down=True, status_code=503)
-        return store_unreachable()
+        return JSONResponse({"error": "vote store unreachable"}, status_code=503)
     response = RedirectResponse("/", status_code=303)
     # Soft guard against double voting, not real security. No Secure flag: local runs are plain HTTP.
     response.set_cookie(COOKIE, poll_id, max_age=86400, httponly=True, samesite="lax", path="/")
@@ -184,12 +189,10 @@ def vote(
 @app.get("/api/results")
 def results(settings: Settings = Depends(get_settings), table: TableClient = Depends(get_table)):
     try:
-        rows = table.query_entities(
-            "PartitionKey eq @pk", parameters={"pk": settings.poll_id}, select=["option"]
-        )
-        counts = Counter(row["option"] for row in rows)
-    except AzureError:
-        return store_unreachable()
+        counts = count_votes(settings, table)
+    except AzureError as exc:
+        log_store_down(exc)
+        return JSONResponse({"error": "vote store unreachable"}, status_code=503)
     return {
         "poll_id": settings.poll_id,
         "question": settings.question,

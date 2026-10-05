@@ -136,3 +136,32 @@ resource "azurerm_federated_identity_credential" "github_prod" {
 
   depends_on = [azurerm_federated_identity_credential.github_main]
 }
+
+# CI access.
+# Demo shortcut: one identity with write on prod, used for both plan and apply.
+# Real life: plan uses a separate read-only identity (Reader, plus blob read on state),
+# federated only to pull_request. Apply uses a write identity federated only to
+# environment:prod, and its RBAC Administrator assignment gets a `condition` that
+# limits which roles it can grant (for example only Storage Table Data Contributor).
+
+resource "azurerm_role_assignment" "ci_prod_contributor" {
+  scope                = azurerm_resource_group.prod.id
+  role_definition_name = "Contributor"
+  principal_id         = azurerm_user_assigned_identity.github.principal_id
+  principal_type       = "ServicePrincipal"
+}
+
+# Lets CI grant the app's managed identity its data role in prod.
+resource "azurerm_role_assignment" "ci_prod_rbac_admin" {
+  scope                = azurerm_resource_group.prod.id
+  role_definition_name = "Role Based Access Control Administrator"
+  principal_id         = azurerm_user_assigned_identity.github.principal_id
+  principal_type       = "ServicePrincipal"
+}
+
+resource "azurerm_role_assignment" "ci_tfstate_blob" {
+  scope                = azurerm_storage_container.tfstate.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azurerm_user_assigned_identity.github.principal_id
+  principal_type       = "ServicePrincipal"
+}

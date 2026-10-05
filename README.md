@@ -20,6 +20,8 @@ This starts the app, [Azurite](https://learn.microsoft.com/azure/storage/common/
 - `http://localhost:8000/api/results` shows the counts as JSON.
 - `POLL_QUESTION="Other?" docker compose up -d app` starts a new poll at zero. Older votes stay in the table.
 - Votes survive `docker compose down`. Use `docker compose down -v` to delete them.
+- `docker compose stop azurite` shows what happens when the vote store is down. `/` and `/results` still load, with the banner "Can't reach the vote store", and `docker compose logs app` shows `vote store unreachable: <cause>`. `docker compose start azurite` recovers.
+- Local runs use `AUTH_MODE=key` (a connection string). `AUTH_MODE=identity` also needs `STORAGE_ACCOUNT_NAME` and `AZURE_CLIENT_ID` (the user-assigned managed identity). It only works on Azure, because Azurite has no managed identity.
 
 Run the tests:
 

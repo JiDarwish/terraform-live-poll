@@ -7,3 +7,6 @@ subscription_id = "00000000-0000-0000-0000-000000000000"
 
 # az ad signed-in-user show --query id -o tsv
 presenter_object_id = "00000000-0000-0000-0000-000000000001"
+
+# Fokke's GitHub login, without the @. Use the exact letter case shown on their profile.
+second_reviewer_github_login = "octocat"

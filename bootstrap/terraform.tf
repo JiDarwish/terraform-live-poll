@@ -6,6 +6,10 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "~> 5.8"
     }
+    github = {
+      source  = "integrations/github"
+      version = "~> 6.13"
+    }
   }
 
   # This root stores its own state in the container it creates.
@@ -28,4 +32,9 @@ provider "azurerm" {
 
   # Shared-key auth is off on the state account, so talk to blob storage with Entra.
   storage_use_azuread = true
+}
+
+# Token comes from GITHUB_TOKEN (export GITHUB_TOKEN=$(gh auth token)), never from a variable.
+provider "github" {
+  owner = local.github_owner
 }

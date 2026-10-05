@@ -18,3 +18,13 @@ variable "presenter_object_id" {
     error_message = "presenter_object_id must be an Entra object id (a GUID), not a UPN or e-mail address."
   }
 }
+
+variable "second_reviewer_github_login" {
+  description = "GitHub login of the second required reviewer on prod (Fokke), without the @."
+  type        = string
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9-]{1,39}$", var.second_reviewer_github_login))
+    error_message = "second_reviewer_github_login must be a GitHub login, without @."
+  }
+}

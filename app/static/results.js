@@ -10,6 +10,7 @@ const RELOAD_AFTER = 3;
 let changedTicks = 0;
 
 async function tick() {
+  const started = Date.now();
   try {
     const r = await fetch("/api/results", { cache: "no-store" });
     if (!r.ok) throw new Error(r.status);
@@ -34,7 +35,8 @@ async function tick() {
   } catch {
     banner.hidden = false; // keep the last counts on screen
   }
-  setTimeout(tick, 2000);
+  // Time the next tick from this one's start, so request time doesn't stretch the 2 s cycle.
+  setTimeout(tick, Math.max(0, 2000 - (Date.now() - started)));
 }
 
 tick();

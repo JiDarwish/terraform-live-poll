@@ -4,6 +4,10 @@ const banner = document.querySelector(".banner");
 const total = document.querySelector(".total-count");
 // A Map, not CSS selectors: option text can contain quotes.
 const rows = new Map([...document.querySelectorAll("li[data-option]")].map((li) => [li.dataset.option, li]));
+// Split traffic across revisions can answer from either one: reload only once
+// the change holds for this many ticks in a row.
+const RELOAD_AFTER = 3;
+let changedTicks = 0;
 
 async function tick() {
   try {
@@ -13,8 +17,12 @@ async function tick() {
     banner.hidden = true;
     // A new poll or revision changes the question, options or footer: re-render it all.
     if (data.poll_id !== main.dataset.pollId || data.revision !== main.dataset.revision) {
-      location.reload();
-      return;
+      if (++changedTicks >= RELOAD_AFTER) {
+        location.reload();
+        return;
+      }
+    } else {
+      changedTicks = 0;
     }
     for (const { option, count } of data.options) {
       const li = rows.get(option);

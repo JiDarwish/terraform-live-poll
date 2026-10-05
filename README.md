@@ -34,16 +34,17 @@ To also run the test against a real Azurite, set `AZURITE_CONNECTION_STRING` (wi
 
 ## Bootstrap (run once)
 
-`bootstrap/` creates the state storage account, the `rg-livepoll-*` resource groups, the presenter's access and the CI identity GitHub Actions logs in with (OIDC, no secrets). It stores its own state in the container it creates, so the very first run starts with local state and then moves it. You need Terraform 1.16, the Azure CLI and Owner on the subscription.
+`bootstrap/` creates the state storage account, the `rg-livepoll-*` resource groups, the presenter's access, the CI identity GitHub Actions logs in with (OIDC, no secrets), the GitHub `prod` environment with its required reviewers and the Actions variables CI reads. It stores its own state in the container it creates, so the very first run starts with local state and then moves it. You need Terraform 1.16, the Azure CLI, Owner on the subscription and the GitHub CLI, signed in as the repo owner.
 
-1. `az login`
-2. `cp bootstrap/terraform.tfvars.example bootstrap/terraform.tfvars` and fill in your subscription id and your own Entra object id. The file is gitignored.
+1. `az login`, `gh auth login`, then `export GITHUB_TOKEN=$(gh auth token)`. The GitHub provider reads the token from the environment, so it never lands in tfvars or a plan file.
+2. `cp bootstrap/terraform.tfvars.example bootstrap/terraform.tfvars` and fill in your subscription id, your own Entra object id and the second reviewer's GitHub login. The file is gitignored.
 3. `printf 'terraform {\n  backend "local" {}\n}\n' > bootstrap/local_override.tf` (gitignored: it swaps in a local backend for this run only).
 4. `terraform -chdir=bootstrap init`, then `terraform -chdir=bootstrap apply`. If the apply fails with a 403 on the new storage account, your blob role is still propagating: wait a few minutes and apply again.
 5. `rm bootstrap/local_override.tf`
 6. `terraform -chdir=bootstrap init -migrate-state` and answer `yes`. If it returns 403, wait a few minutes: the blob role from step 4 is still propagating.
 7. `terraform -chdir=bootstrap plan` must show "No changes".
+   The second reviewer must now accept the collaborator invite, from their GitHub notifications or e-mail.
 8. `rm bootstrap/terraform.tfstate bootstrap/terraform.tfstate.backup`
 9. If `bootstrap/.terraform.lock.hcl` is not committed yet: `terraform -chdir=bootstrap providers lock -platform=darwin_arm64 -platform=darwin_amd64 -platform=linux_amd64`, then commit it.
 
-After this, on any clone, plain `terraform -chdir=bootstrap init` uses the remote state, signed in with `az login`, because account keys are turned off.
+After this, on any clone, plain `terraform -chdir=bootstrap init` uses the remote state, signed in with `az login`, because account keys are turned off. `plan` and `apply` also need `GITHUB_TOKEN` exported, as in step 1.

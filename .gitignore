@@ -7,6 +7,9 @@ tfplan
 generated.tf
 crash.log
 terraform.tfvars
+# Override files: the first bootstrap run uses local_override.tf for a local backend.
+override.tf
+*_override.tf
 # .terraform.lock.hcl IS committed: it pins provider versions for everyone.
 
 # Python

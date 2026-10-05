@@ -27,7 +27,7 @@
         <p class="total"><span class="total-count">–</span> votes</p>
       </section>
       <aside class="qr">
-        {{ qr | safe }}
+        <div role="img" aria-label="QR code to the vote page">{{ qr | safe }}</div>
         <p class="vote-url">{{ vote_url }}</p>
       </aside>
     </div>

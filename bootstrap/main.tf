@@ -90,6 +90,15 @@ resource "azurerm_role_assignment" "presenter_prod_contributor" {
   principal_type       = "User"
 }
 
+# azurerm creates and reads tables through the Table data plane, signed in as the presenter.
+# Owner grants no data actions. Granted here, not in infra/, so it has propagated before infra's first apply.
+resource "azurerm_role_assignment" "presenter_dev_table" {
+  scope                = azurerm_resource_group.dev.id
+  role_definition_name = "Storage Table Data Contributor"
+  principal_id         = var.presenter_object_id
+  principal_type       = "User"
+}
+
 resource "azurerm_role_assignment" "presenter_tfstate_blob" {
   scope                = azurerm_storage_container.tfstate.id
   role_definition_name = "Storage Blob Data Contributor"

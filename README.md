@@ -59,4 +59,4 @@ After this, on any clone, plain `terraform -chdir=bootstrap init` uses the remot
 4. `terraform -chdir=infra plan -var-file=envs/dev.tfvars`, then `terraform -chdir=infra apply -var-file=envs/dev.tfvars`. With `-chdir`, the `envs/` paths are relative to `infra/`.
 5. If `infra/.terraform.lock.hcl` is not committed yet: `terraform -chdir=infra providers lock -platform=darwin_arm64 -platform=darwin_amd64 -platform=linux_amd64`, then commit it.
 
-The provider creates the `votes` table through the Table data plane with your Entra login (`storage_use_azuread = true`), and Owner on `rg-livepoll-dev` grants no data access. If the apply fails with a 403 on the table, you need `Storage Table Data Contributor` on the vote account, which bootstrap does not grant yet.
+Known gap: the first apply creates the storage account, then fails with a 403 on the `votes` table. azurerm 5.8 creates tables through the Table data plane, and with `storage_use_azuread = true` it signs in with your Entra login. Owner on `rg-livepoll-dev` grants no data access. You need `Storage Table Data Contributor` on `rg-livepoll-dev`, and bootstrap does not grant it yet.

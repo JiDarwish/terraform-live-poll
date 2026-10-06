@@ -48,3 +48,15 @@ To also run the test against a real Azurite, set `AZURITE_CONNECTION_STRING` (wi
 9. If `bootstrap/.terraform.lock.hcl` is not committed yet: `terraform -chdir=bootstrap providers lock -platform=darwin_arm64 -platform=darwin_amd64 -platform=linux_amd64`, then commit it.
 
 After this, on any clone, plain `terraform -chdir=bootstrap init` uses the remote state, signed in with `az login`, because account keys are turned off. `plan` and `apply` also need `GITHUB_TOKEN` exported, as in step 1.
+
+## Dev environment (laptop)
+
+`infra/` is the app team's root module. It runs against dev from the laptop and against prod only from CI: never init or apply prod from the laptop. Each environment has its own state file (`infra-dev.tfstate`, `infra-prod.tfstate`) in the bootstrap state container. Run bootstrap first.
+
+1. `az login`
+2. `export ARM_SUBSCRIPTION_ID=$(az account show --query id -o tsv)`. The provider reads the subscription from the environment, so it never lands in a committed file.
+3. `terraform -chdir=infra init -backend-config=envs/dev.backend.hcl`
+4. `terraform -chdir=infra plan -var-file=envs/dev.tfvars`, then `terraform -chdir=infra apply -var-file=envs/dev.tfvars`. With `-chdir`, the `envs/` paths are relative to `infra/`.
+5. If `infra/.terraform.lock.hcl` is not committed yet: `terraform -chdir=infra providers lock -platform=darwin_arm64 -platform=darwin_amd64 -platform=linux_amd64`, then commit it.
+
+The provider creates the `votes` table through the Table data plane with your Entra login (`storage_use_azuread = true`), and Owner on `rg-livepoll-dev` grants no data access. If the apply fails with a 403 on the table, you need `Storage Table Data Contributor` on the vote account, which bootstrap does not grant yet.
